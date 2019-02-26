@@ -27,13 +27,18 @@
 #include <inttypes.h>
 #include <assert.h>
 #include <stdarg.h>
+#ifdef __APPLE__
+#include <sys/param.h>
+#include <sys/mount.h>
+#else
 #include <sys/statfs.h>
+#include <sys/sysmacros.h>
+#endif
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <dirent.h>
 #include <errno.h>
-#include <sys/sysmacros.h>
 
 #include "cutils.h"
 #include "fs_utils.h"
@@ -155,8 +160,13 @@ void scan_dir(ScanState *s, const char *path)
             fprintf(f, " %" PRIu64, st.st_size);
         }
         /* modification time (at most ms resolution) */
+#ifdef __APPLE__
+        fprintf(f, " %u", (int)st.st_mtimespec.tv_sec);
+        v = st.st_mtimespec.tv_nsec;
+#else
         fprintf(f, " %u", (int)st.st_mtim.tv_sec);
         v = st.st_mtim.tv_nsec;
+#endif
         if (v != 0) {
             fprintf(f, ".");
             while (v != 0) {
