@@ -24,14 +24,16 @@
 
 # if set, network filesystem is enabled. libcurl and libcrypto
 # (openssl) must be installed.
-#CONFIG_FS_NET=y
+CONFIG_FS_NET=y
 # SDL support (optional)
 CONFIG_SDL=y
 # if set, compile the 128 bit emulator. Note: the 128 bit target does
 # not compile if gcc does not support the int128 type (32 bit hosts).
 CONFIG_INT128=y
 # build x86 emulator
-#CONFIG_X86EMU=y
+CONFIG_X86EMU=y
+# macOS build
+#CONFIG_MACOS=y
 # win32 build (not usable yet)
 #CONFIG_WIN32=y
 # user space network redirector
@@ -46,8 +48,8 @@ EXE=
 endif
 CC=$(CROSS_PREFIX)gcc
 STRIP=$(CROSS_PREFIX)strip
-CFLAGS=-O2 -Wall -g -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -MMD
-CFLAGS+=-D_GNU_SOURCE -DCONFIG_VERSION=\"$(shell cat VERSION)\"
+override CFLAGS+=-O2 -Wall -g -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -MMD
+override CFLAGS+=-D_GNU_SOURCE -DCONFIG_VERSION=\"$(shell cat VERSION)\"
 LDFLAGS=
 
 bindir=/usr/local/bin
@@ -66,16 +68,18 @@ EMU_OBJS:=virtio.o pci.o fs.o cutils.o iomem.o simplefb.o \
     json.o machine.o temu.o
 
 ifdef CONFIG_SLIRP
-CFLAGS+=-DCONFIG_SLIRP
+override CFLAGS+=-DCONFIG_SLIRP
 EMU_OBJS+=$(addprefix slirp/, bootp.o ip_icmp.o mbuf.o slirp.o tcp_output.o cksum.o ip_input.o misc.o socket.o tcp_subr.o udp.o if.o ip_output.o sbuf.o tcp_input.o tcp_timer.o)
 endif
 
 ifndef CONFIG_WIN32
 EMU_OBJS+=fs_disk.o
-#EMU_LIBS=-lrt
-endif
+ifndef CONFIG_MACOS
+EMU_LIBS=-lrt
+endif # CONFIG_MACOS
+endif # CONFIG_WIN32
 ifdef CONFIG_FS_NET
-CFLAGS+=-DCONFIG_FS_NET
+override CFLAGS+=-DCONFIG_FS_NET
 EMU_OBJS+=fs_net.o fs_wget.o fs_utils.o block_net.o
 EMU_LIBS+=-lcurl -lcrypto
 ifdef CONFIG_WIN32
@@ -85,7 +89,7 @@ endif # CONFIG_FS_NET
 ifdef CONFIG_SDL
 EMU_LIBS+=-lSDL2
 EMU_OBJS+=sdl.o
-CFLAGS+=-DCONFIG_SDL
+override CFLAGS+=-DCONFIG_SDL
 ifdef CONFIG_WIN32
 LDFLAGS+=-mwindows
 endif
@@ -93,13 +97,13 @@ endif
 
 EMU_OBJS+=riscv_machine.o softfp.o riscv_cpu32.o riscv_cpu64.o
 ifdef CONFIG_INT128
-CFLAGS+=-DCONFIG_RISCV_MAX_XLEN=128
+override CFLAGS+=-DCONFIG_RISCV_MAX_XLEN=128
 EMU_OBJS+=riscv_cpu128.o
 else
-CFLAGS+=-DCONFIG_RISCV_MAX_XLEN=64
+override CFLAGS+=-DCONFIG_RISCV_MAX_XLEN=64
 endif
 ifdef CONFIG_X86EMU
-CFLAGS+=-DCONFIG_X86EMU
+override CFLAGS+=-DCONFIG_X86EMU
 EMU_OBJS+=x86_cpu.o x86_machine.o ide.o ps2.o vmmouse.o pckbd.o vga.o
 endif
 
