@@ -30,7 +30,7 @@
 #include <fcntl.h>
 #include <errno.h>
 
-#include <SDL/SDL.h>
+#include <SDL2/SDL.h>
 
 #include "cutils.h"
 #include "virtio.h"
@@ -38,34 +38,32 @@
 
 #define KEYCODE_MAX 127
 
-static SDL_Surface *screen;
-static SDL_Surface *fb_surface;
-static int screen_width, screen_height, fb_width, fb_height, fb_stride;
+static SDL_Window *window;
+static SDL_Renderer *renderer;
+static SDL_Texture *fb_texture;
+static int window_width, window_height, fb_width, fb_height;
 static SDL_Cursor *sdl_cursor_hidden;
 static uint8_t key_pressed[KEYCODE_MAX + 1];
 
-static void sdl_update_fb_surface(FBDevice *fb_dev)
+static void sdl_update_fb_texture(FBDevice *fb_dev)
 {
-    if (!fb_surface)
-        goto force_alloc;
-    if (fb_width != fb_dev->width ||
-        fb_height != fb_dev->height ||
-        fb_stride != fb_dev->stride) {
-    force_alloc:
-        if (fb_surface != NULL)
-            SDL_FreeSurface(fb_surface);
+    if (!fb_texture ||
+        fb_width != fb_dev->width ||
+        fb_height != fb_dev->height) {
+
+        if (fb_texture != NULL)
+            SDL_DestroyTexture(fb_texture);
+
         fb_width = fb_dev->width;
         fb_height = fb_dev->height;
-        fb_stride = fb_dev->stride;
-        fb_surface = SDL_CreateRGBSurfaceFrom(fb_dev->fb_data,
-                                              fb_dev->width, fb_dev->height,
-                                              32, fb_dev->stride,
-                                              0x00ff0000,
-                                              0x0000ff00,
-                                              0x000000ff,
-                                              0x00000000);
-        if (!fb_surface) {
-            fprintf(stderr, "Could not create SDL framebuffer surface\n");
+
+        fb_texture = SDL_CreateTexture(renderer,
+                                       SDL_PIXELFORMAT_ARGB8888,
+                                       SDL_TEXTUREACCESS_STREAMING,
+                                       fb_dev->width,
+                                       fb_dev->height);
+        if (!fb_texture) {
+            fprintf(stderr, "Could not create SDL framebuffer texture\n");
             exit(1);
         }
     }
@@ -74,14 +72,10 @@ static void sdl_update_fb_surface(FBDevice *fb_dev)
 static void sdl_update(FBDevice *fb_dev, void *opaque,
                        int x, int y, int w, int h)
 {
-    SDL_Rect r;
-    //    printf("sdl_update: %d %d %d %d\n", x, y, w, h);
-    r.x = x;
-    r.y = y;
-    r.w = w;
-    r.h = h;
-    SDL_BlitSurface(fb_surface, &r, screen, &r);
-    SDL_UpdateRect(screen, r.x, r.y, r.w, r.h);
+    SDL_UpdateTexture(fb_texture, NULL, fb_dev->fb_data, fb_dev->stride);
+    SDL_RenderClear(renderer);
+    SDL_RenderCopy(renderer, fb_texture, NULL, NULL);
+    SDL_RenderPresent(renderer);
 }
 
 #if defined(_WIN32)
@@ -159,8 +153,8 @@ static void sdl_send_mouse_event(VirtMachine *m, int x1, int y1,
     if (state & SDL_BUTTON(SDL_BUTTON_MIDDLE))
         buttons |= (1 << 2);
     if (is_absolute) {
-        x = (x1 * 32768) / screen_width;
-        y = (y1 * 32768) / screen_height;
+        x = (x1 * 32768) / window_width;
+        y = (y1 * 32768) / window_height;
     } else {
         x = x1;
         y = y1;
@@ -188,13 +182,8 @@ static void sdl_handle_mouse_button_event(const SDL_Event *ev, VirtMachine *m)
     int state, dz;
 
     dz = 0;
-    if (ev->type == SDL_MOUSEBUTTONDOWN) {
-        if (ev->button.button == SDL_BUTTON_WHEELUP) {
-            dz = 1;
-        } else if (ev->button.button == SDL_BUTTON_WHEELDOWN) {
-            dz = -1;
-        }
-    }
+    if (ev->type == SDL_MOUSEWHEEL)
+        dz = ev->wheel.y;
     
     state = SDL_GetMouseState(NULL, NULL);
     /* just in case */
@@ -218,7 +207,7 @@ void sdl_refresh(VirtMachine *m)
     if (!m->fb_dev)
         return;
     
-    sdl_update_fb_surface(m->fb_dev);
+    sdl_update_fb_texture(m->fb_dev);
 
     m->fb_dev->refresh(m->fb_dev, sdl_update, NULL);
     
@@ -251,25 +240,21 @@ static void sdl_hide_cursor(void)
 
 void sdl_init(int width, int height)
 {
-    int flags;
-    
-    screen_width = width;
-    screen_height = height;
+    window_width = width;
+    window_height = height;
 
-    if (SDL_Init (SDL_INIT_VIDEO | SDL_INIT_NOPARACHUTE)) {
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_NOPARACHUTE)) {
         fprintf(stderr, "Could not initialize SDL - exiting\n");
         exit(1);
     }
 
-    flags = SDL_HWSURFACE | SDL_ASYNCBLIT | SDL_HWACCEL;
-    screen = SDL_SetVideoMode(width, height, 0, flags);
-    if (!screen || !screen->pixels) {
-        fprintf(stderr, "Could not open SDL display\n");
+    int result = SDL_CreateWindowAndRenderer(width, height, 0, &window, &renderer);
+    if (result == -1) {
+        fprintf(stderr, "Could not create SDL window\n");
         exit(1);
     }
 
-    SDL_WM_SetCaption("RISCVEMU", "RISCVEMU");
+    SDL_SetWindowTitle(window, "TinyEMU");
 
     sdl_hide_cursor();
 }
-
