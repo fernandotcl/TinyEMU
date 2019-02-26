@@ -32,9 +32,11 @@
 #include <unistd.h>
 #include <time.h>
 #include <getopt.h>
-#if !defined(_WIN32) && !defined(__APPLE__)
+#ifndef _WIN32
 #include <termios.h>
 #include <sys/ioctl.h>
+#endif
+#if !defined(_WIN32) && !defined(__APPLE__)
 #include <net/if.h>
 #include <linux/if_tun.h>
 #endif
@@ -53,7 +55,7 @@
 #include "slirp/libslirp.h"
 #endif
 
-#if !defined(_WIN32) && !defined(__APPLE__)
+#ifndef _WIN32
 
 typedef struct {
     int stdin_fd;
@@ -204,7 +206,7 @@ CharacterDevice *console_init(BOOL allow_ctrlc)
     return dev;
 }
 
-#endif /* !_WIN32 && !__APPLE__ */
+#endif /* !_WIN32 */
 
 typedef enum {
     BF_MODE_RO,
@@ -539,7 +541,7 @@ void virt_machine_run(VirtMachine *m)
     fd_set rfds, wfds, efds;
     int fd_max, ret, delay;
     struct timeval tv;
-#if !defined(_WIN32) && !defined(__APPLE__)
+#ifndef _WIN32
     int stdin_fd;
 #endif
     
@@ -550,7 +552,7 @@ void virt_machine_run(VirtMachine *m)
     FD_ZERO(&wfds);
     FD_ZERO(&efds);
     fd_max = -1;
-#if !defined(_WIN32) && !defined(__APPLE__)
+#ifndef _WIN32
     if (m->console_dev && virtio_console_can_write_data(m->console_dev)) {
         STDIODevice *s = m->console->opaque;
         stdin_fd = s->stdin_fd;
@@ -578,7 +580,7 @@ void virt_machine_run(VirtMachine *m)
         m->net->select_poll(m->net, &rfds, &wfds, &efds, ret);
     }
     if (ret > 0) {
-#if !defined(_WIN32) && !defined(__APPLE__)
+#ifndef _WIN32
         if (m->console_dev && FD_ISSET(stdin_fd, &rfds)) {
             uint8_t buf[128];
             int ret, len;
@@ -808,7 +810,7 @@ int main(int argc, char **argv)
     } else
 #endif
     {
-#if defined(_WIN32) || defined(__APPLE__)
+#ifdef _WIN32
         fprintf(stderr, "Console not supported yet\n");
         exit(1);
 #else
