@@ -1,0 +1,39 @@
+2018-09-23:
+
+- added support for separate RISC-V BIOS and kernel
+
+2018-09-15:
+
+- renamed to TinyEMU (temu)
+- single executable for all emulated machines
+
+2018-08-29:
+
+- compilation fixes
+
+2017-08-06:
+
+- added JSON configuration file
+- added graphical display with SDL
+- added VirtIO input support
+- added PCI bus and VirtIO PCI support
+- x86: added IDE, PS/2, vmmouse and VGA devices
+- added user mode network interface
+
+2017-06-10:
+
+- RISCV: avoid unnecessary kernel patches
+- x86: accept standard kernel images
+
+2017-05-25:
+
+- RISCV: faster emulation (1.4x)
+- Support of user level ISA version 2.2 and priviledged architecture
+  version 1.10
+- added small x86 emulator (x86emu) based on KVM
+- modified the fs_net network protocol to match the vfsync protocol
+- handle console resize
+- JS emulator:
+  - added scrollbar in terminal
+  - added file import and export
+  - added copy/paste support
