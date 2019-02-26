@@ -1,5 +1,7 @@
 # Build products
 temu
+build_filelist
+splitimg
 *.o
 *.d
 
