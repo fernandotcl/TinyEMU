@@ -1,0 +1,7 @@
+# Build products
+temu
+*.o
+*.d
+
+# macOS-specific
+.DS_Store
