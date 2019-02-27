@@ -72,10 +72,8 @@ static void sdl_update_fb_texture(FBDevice *fb_dev)
 static void sdl_update(FBDevice *fb_dev, void *opaque,
                        int x, int y, int w, int h)
 {
-    SDL_UpdateTexture(fb_texture, NULL, fb_dev->fb_data, fb_dev->stride);
-    SDL_RenderClear(renderer);
-    SDL_RenderCopy(renderer, fb_texture, NULL, NULL);
-    SDL_RenderPresent(renderer);
+    int *dirty = (int *)opaque;
+    *dirty = 1;
 }
 
 static int sdl_get_keycode(const SDL_KeyboardEvent *ev)
@@ -363,8 +361,18 @@ void sdl_refresh(VirtMachine *m)
     
     sdl_update_fb_texture(m->fb_dev);
 
-    m->fb_dev->refresh(m->fb_dev, sdl_update, NULL);
-    
+    int dirty = 0;
+    m->fb_dev->refresh(m->fb_dev, sdl_update, &dirty);
+
+    if (dirty) {
+        SDL_UpdateTexture(fb_texture, NULL,
+                          m->fb_dev->fb_data,
+                          m->fb_dev->stride);
+        SDL_RenderClear(renderer);
+        SDL_RenderCopy(renderer, fb_texture, NULL, NULL);
+        SDL_RenderPresent(renderer);
+    }
+
     while (SDL_PollEvent(ev)) {
         switch (ev->type) {
         case SDL_KEYDOWN:
