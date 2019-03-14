@@ -1,5 +1,7 @@
 # TinyEMU
 
+[![Build Status](https://travis-ci.com/fernandotcl/TinyEMU.svg?branch=master)](https://travis-ci.com/fernandotcl/TinyEMU)
+
 This is a port of [TinyEMU][tinyemu] to macOS.
 
 [tinyemu]: https://bellard.org/tinyemu/
