@@ -1787,7 +1787,7 @@ static void dump_loaded_file(FSDevice *fs1, FSINode *n)
                 fname, n->u.reg.size);
         fflush(fs->dump_preload_file);
     } else {
-        fprintf(fs->dump_preload_archive_file, "  %s %zd %llx\n",
+        fprintf(fs->dump_preload_archive_file, "  %s %zd %" PRIx64 "\n",
                 n->u.reg.filename, n->u.reg.size, n->u.reg.file_id);
         fflush(fs->dump_preload_archive_file);
         fwrite(n->u.reg.fbuf.data, 1, n->u.reg.size, fs->dump_archive_file);
