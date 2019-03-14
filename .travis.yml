@@ -1,0 +1,17 @@
+language: c
+matrix:
+  include:
+    - os: linux
+    - os: osx
+addons:
+  apt:
+    packages:
+      - libcurl4-openssl-dev
+      - libssl-dev
+      - libsdl2-dev
+  homebrew:
+    packages:
+      - openssl
+      - sdl2
+script:
+  - if test "$TRAVIS_OS_NAME" = osx; then make CFLAGS=-I$(brew --prefix)/opt/openssl/include CONFIG_MACOS=y; else make; fi
