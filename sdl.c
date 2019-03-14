@@ -1,6 +1,6 @@
 /*
  * SDL display driver
- * 
+ *
  * Copyright (c) 2017 Fabrice Bellard
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -260,7 +260,7 @@ static int sdl_get_keycode(const SDL_KeyboardEvent *ev)
 static void sdl_reset_keys(VirtMachine *m)
 {
     int i;
-    
+
     for(i = 1; i <= KEYCODE_MAX; i++) {
         if (key_pressed[i]) {
             vm_send_key_event(m, FALSE, i);
@@ -336,7 +336,7 @@ static void sdl_handle_mouse_button_event(const SDL_Event *ev, VirtMachine *m)
     dz = 0;
     if (ev->type == SDL_MOUSEWHEEL)
         dz = ev->wheel.y;
-    
+
     state = SDL_GetMouseState(NULL, NULL);
     /* just in case */
     if (ev->type == SDL_MOUSEBUTTONDOWN)
@@ -358,7 +358,7 @@ void sdl_refresh(VirtMachine *m)
 
     if (!m->fb_dev)
         return;
-    
+
     sdl_update_fb_texture(m->fb_dev);
 
     int dirty = 0;
