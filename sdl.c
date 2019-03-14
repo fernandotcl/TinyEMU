@@ -225,7 +225,9 @@ static int sdl_get_keycode(const SDL_KeyboardEvent *ev)
         case SDL_SCANCODE_AUDIOPLAY: return 164;
         case SDL_SCANCODE_AUDIOPREV: return 165;
         case SDL_SCANCODE_AUDIOSTOP: return 166;
+#if SDL_VERSION_ATLEAST(2, 0, 6)
         case SDL_SCANCODE_AUDIOREWIND: return 168;
+#endif
         case SDL_SCANCODE_AC_HOME: return 172;
         case SDL_SCANCODE_AC_REFRESH: return 173;
         case SDL_SCANCODE_KP_LEFTPAREN: return 179;
@@ -242,7 +244,9 @@ static int sdl_get_keycode(const SDL_KeyboardEvent *ev)
         case SDL_SCANCODE_F22: return 192;
         case SDL_SCANCODE_F23: return 193;
         case SDL_SCANCODE_F24: return 194;
+#if SDL_VERSION_ATLEAST(2, 0, 6)
         case SDL_SCANCODE_AUDIOFASTFORWARD: return 208;
+#endif
         case SDL_SCANCODE_AC_SEARCH: return 217;
         case SDL_SCANCODE_ALTERASE: return 222;
         case SDL_SCANCODE_CANCEL: return 223;
