@@ -151,7 +151,8 @@ void elf_load(uint8_t *inbuf, int inbuf_len,
     const uintptr_t phoff = (uintptr_t)header_dword(phoff);
 
     size_t req_size = 0;
-    for (uint16_t i = 0; i < phnum; i++) {
+    uint16_t i;
+    for (i = 0; i < phnum; i++) {
         const uintptr_t phbase = phoff + i * phentsize;
         const uint32_t type = pheader_field(32, type);
         if (type == PT_LOAD) {
@@ -165,7 +166,7 @@ void elf_load(uint8_t *inbuf, int inbuf_len,
     *outbuf = calloc(req_size, 1);
     *outbuf_len = (int)req_size;
 
-    for (uint16_t i = 0; i < phnum; i++) {
+    for (i = 0; i < phnum; i++) {
         const uintptr_t phbase = phoff + i * phentsize;
         const uint32_t type = pheader_field(32, type);
         if (type == PT_LOAD) {
