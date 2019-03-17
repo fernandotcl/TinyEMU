@@ -37,6 +37,7 @@
 #include "riscv_cpu.h"
 #include "virtio.h"
 #include "machine.h"
+#include "elf.h"
 
 /* RISCV machine */
 
@@ -753,13 +754,21 @@ static void copy_bios(RISCVMachine *s, const uint8_t *buf, int buf_len,
     uint8_t *ram_ptr;
     uint32_t *q;
 
-    if (buf_len > s->ram_size) {
-        vm_error("BIOS too big\n");
-        exit(1);
-    }
-
     ram_ptr = get_ram_ptr(s, RAM_BASE_ADDR, TRUE);
-    memcpy(ram_ptr, buf, buf_len);
+
+    /* copy the bios */
+    if (elf_detect_magic(buf, buf_len)) {
+        if (elf_load(buf, buf_len, ram_ptr, s->ram_size) == -1) {
+            vm_error("Failed to load ELF BIOS\n");
+            exit(1);
+        }
+    } else {
+        if (buf_len > s->ram_size) {
+            vm_error("BIOS too big\n");
+            exit(1);
+        }
+        memcpy(ram_ptr, buf, buf_len);
+    }
 
     if (kernel_buf_len > 0) {
         /* copy the kernel if present */
@@ -768,7 +777,16 @@ static void copy_bios(RISCVMachine *s, const uint8_t *buf, int buf_len,
         else
             kernel_align = 2 << 20; /* 2 MB page align */
         kernel_base = (buf_len + kernel_align - 1) & ~(kernel_align - 1);
-        memcpy(ram_ptr + kernel_base, kernel_buf, kernel_buf_len);
+        if (elf_detect_magic(kernel_buf, kernel_buf_len)) {
+            if (elf_load(kernel_buf, kernel_buf_len,
+                         ram_ptr + kernel_base,
+                         s->ram_size - kernel_base) == -1) {
+                vm_error("Failed to load ELF kernel\n");
+                exit(1);
+            }
+        } else {
+            memcpy(ram_ptr + kernel_base, kernel_buf, kernel_buf_len);
+        }
     } else {
         kernel_base = 0;
     }

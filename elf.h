@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 
-int elf_detect_magic(uint8_t *buf, int buf_len);
+int elf_detect_magic(const uint8_t *buf, int buf_len);
 
-void elf_load(uint8_t *inbuf, int inbuf_len,
-              uint8_t **outbuf, int *outbuf_len);
+int elf_load(const uint8_t *inbuf, int inbuf_len,
+             uint8_t *outbuf, int outbuf_len);

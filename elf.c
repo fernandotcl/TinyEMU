@@ -96,7 +96,7 @@ typedef struct __attribute__((packed)) {
 
 #define PT_LOAD 0x01
 
-int elf_detect_magic(uint8_t *buf, int buf_len)
+int elf_detect_magic(const uint8_t *buf, int buf_len)
 {
     if (buf_len < sizeof(elf_ident_t)) return 0;
 
@@ -108,8 +108,8 @@ int elf_detect_magic(uint8_t *buf, int buf_len)
             ident->version == 1);
 }
 
-void elf_load(uint8_t *inbuf, int inbuf_len,
-              uint8_t **outbuf, int *outbuf_len)
+int elf_load(const uint8_t *inbuf, int inbuf_len,
+             uint8_t *outbuf, int outbuf_len)
 {
 #define is_elf_64 (ident->class == 2)
 #define is_big_endian (ident->data == 2)
@@ -150,21 +150,16 @@ void elf_load(uint8_t *inbuf, int inbuf_len,
     const uint16_t phentsize = header_field(16, phentsize);
     const uintptr_t phoff = (uintptr_t)header_dword(phoff);
 
-    size_t req_size = 0;
+    uintptr_t base_address = UINTPTR_MAX;
     uint16_t i;
     for (i = 0; i < phnum; i++) {
         const uintptr_t phbase = phoff + i * phentsize;
         const uint32_t type = pheader_field(32, type);
         if (type == PT_LOAD) {
             const uintptr_t paddr = (uintptr_t)pheader_dword(paddr);
-            const size_t memsz = (size_t)pheader_dword(memsz);
-            const size_t high = (size_t)paddr + memsz;
-            if (req_size < high) req_size = high;
+            if (paddr < base_address) base_address = paddr;
         }
     }
-
-    *outbuf = calloc(req_size, 1);
-    *outbuf_len = (int)req_size;
 
     for (i = 0; i < phnum; i++) {
         const uintptr_t phbase = phoff + i * phentsize;
@@ -173,7 +168,10 @@ void elf_load(uint8_t *inbuf, int inbuf_len,
             const uintptr_t offset = (uintptr_t)pheader_dword(offset);
             const uintptr_t paddr = (uintptr_t)pheader_dword(paddr);
             const size_t filesz = (size_t)pheader_dword(filesz);
-            memcpy(&(*outbuf)[paddr], &inbuf[offset], filesz);
+            if (paddr - base_address + filesz > outbuf_len) return -1;
+            memcpy(&outbuf[paddr - base_address], &inbuf[offset], filesz);
         }
     }
+
+    return 0;
 }
