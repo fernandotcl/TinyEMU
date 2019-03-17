@@ -84,12 +84,15 @@ static inline int min_int(int a, int b)
 
 void *mallocz(size_t size);
 
-#if defined(_WIN32) || defined(__APPLE__)
+#if defined(_WIN32)
 static inline uint32_t bswap_32(uint32_t v)
 {
     return ((v & 0xff000000) >> 24) | ((v & 0x00ff0000) >>  8) |
         ((v & 0x0000ff00) <<  8) | ((v & 0x000000ff) << 24);
 }
+#elif defined(__APPLE__)
+#include <libkern/OSByteOrder.h>
+#define bswap_32(x) OSSwapInt32(x)
 #else
 #include <byteswap.h>
 #endif
