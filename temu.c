@@ -54,6 +54,7 @@
 #ifdef CONFIG_SLIRP
 #include "slirp/libslirp.h"
 #endif
+#include "elf.h"
 
 #ifndef _WIN32
 
@@ -730,6 +731,15 @@ int main(int argc, char **argv)
     }
 
     /* open the files & devices */
+    if (p->files[VM_FILE_KERNEL].buf) {
+        VMFileEntry *entry = &p->files[VM_FILE_KERNEL];
+        if (elf_detect_magic(entry->buf, entry->len)) {
+            uint8_t *raw_buffer = entry->buf;
+            elf_load(raw_buffer, entry->len, &entry->buf, &entry->len);
+            free(raw_buffer);
+        }
+    }
+
     for(i = 0; i < p->drive_count; i++) {
         BlockDevice *drive;
         char *fname;

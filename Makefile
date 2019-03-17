@@ -1,6 +1,6 @@
 #
 # TinyEMU
-# 
+#
 # Copyright (c) 2016-2018 Fabrice Bellard
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -65,7 +65,7 @@ endif
 all: $(PROGS)
 
 EMU_OBJS:=virtio.o pci.o fs.o cutils.o iomem.o simplefb.o \
-    json.o machine.o temu.o
+    json.o machine.o temu.o elf.o
 
 ifdef CONFIG_SLIRP
 override CFLAGS+=-DCONFIG_SLIRP
