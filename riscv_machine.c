@@ -67,8 +67,7 @@ typedef struct RISCVMachine {
 #define RAM_BASE_ADDR  0x80000000
 #define CLINT_BASE_ADDR 0x02000000
 #define CLINT_SIZE      0x000c0000
-#define HTIF_BASE_ADDR 0x40008000
-#define IDE_BASE_ADDR  0x40009000
+#define DEFAULT_HTIF_BASE_ADDR 0x40008000
 #define VIRTIO_BASE_ADDR 0x40010000
 #define VIRTIO_SIZE      0x1000
 #define VIRTIO_IRQ       1
@@ -854,6 +853,21 @@ static VirtMachine *riscv_machine_init(const VirtMachineParams *p)
         /* XXX: should free resources */
         return NULL;
     }
+
+    /* HTIF */
+    uint64_t htif_start = DEFAULT_HTIF_BASE_ADDR;
+    if (p->files[VM_FILE_BIOS].buf) {
+        const VMFileEntry *bios = &p->files[VM_FILE_BIOS];
+        if (elf_detect_magic(bios->buf, bios->len)) {
+            uint64_t addr;
+            if (elf_find_section(bios->buf, ".htif", &addr, NULL)) {
+                htif_start = addr + 8;
+            }
+        }
+    }
+    cpu_register_device(s->mem_map, htif_start, 16,
+                        s, htif_read, htif_write, DEVIO_SIZE32);
+
     /* RAM */
     ram_flags = 0;
     cpu_register_ram(s->mem_map, RAM_BASE_ADDR, p->ram_size, ram_flags);
@@ -871,8 +885,6 @@ static VirtMachine *riscv_machine_init(const VirtMachineParams *p)
         irq_init(&s->plic_irq[i], plic_set_irq, s, i);
     }
 
-    cpu_register_device(s->mem_map, HTIF_BASE_ADDR, 16,
-                        s, htif_read, htif_write, DEVIO_SIZE32);
     s->common.console = p->console;
 
     memset(vbus, 0, sizeof(*vbus));
