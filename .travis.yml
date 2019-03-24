@@ -1,8 +1,17 @@
 language: c
+
+services:
+  - docker
+
 matrix:
   include:
     - os: linux
+      env: BUILD=linux
+    - os: linux
+      env: BUILD=linux-emscripten
     - os: osx
+      env: BUILD=macos
+
 addons:
   apt:
     packages:
@@ -13,5 +22,15 @@ addons:
     packages:
       - openssl
       - sdl2
+
+before_install:
+  - case "$BUILD" in
+      linux-emscripten) docker run -dit --name emscripten -v $(pwd):/src trzeci/emscripten:sdk-incoming-64bit bash ;;
+    esac
+
 script:
-  - if test "$TRAVIS_OS_NAME" = osx; then make CFLAGS=-I$(brew --prefix)/opt/openssl/include CONFIG_MACOS=y; else make; fi
+  - case "$BUILD" in
+      linux)            make ;;
+      linux-emscripten) docker exec -it emscripten make -f Makefile.js ;;
+      macos)            make CFLAGS=-I$(brew --prefix)/opt/openssl/include CONFIG_MACOS=y ;;
+    esac
