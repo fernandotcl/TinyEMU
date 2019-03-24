@@ -36,10 +36,16 @@ CONFIG_X86EMU=y
 #CONFIG_MACOS=y
 # iOS build
 #CONFIG_IOS=y
+# iOS simulator build
+#CONFIG_IOS_SIMULATOR=
 # win32 build (not usable yet)
 #CONFIG_WIN32=y
 # user space network redirector
 CONFIG_SLIRP=y
+
+ifdef CONFIG_IOS_SIMULATOR
+CONFIG_IOS=y
+endif
 
 ifdef CONFIG_WIN32
 CROSS_PREFIX=i686-w64-mingw32-
@@ -49,14 +55,20 @@ CROSS_PREFIX=
 EXE=
 endif
 ifdef CONFIG_IOS
-ARCHS=-arch arm64
-CC=$(shell xcrun --sdk iphoneos --find clang)
-CC+=-isysroot $(shell xcrun --sdk iphoneos --show-sdk-path)
-CC+=$(ARCHS)
+ifdef CONFIG_IOS_SIMULATOR
+IOS_ARCHS=-arch x86_64
+IOS_SDK=iphonesimulator
+else
+IOS_ARCHS=-arch arm64
+IOS_SDK=iphoneos
+endif # CONFIG_IOS_SIMULATOR
+CC=$(shell xcrun --sdk $(IOS_SDK) --find clang)
+CC+=-isysroot $(shell xcrun --sdk $(IOS_SDK) --show-sdk-path)
+CC+=$(IOS_ARCHS)
 CC+=-mios-version-min=11.0
 else
 CC=$(CROSS_PREFIX)gcc
-endif
+endif # CONFIG_IOS
 STRIP=$(CROSS_PREFIX)strip
 override CFLAGS+=-O2 -Wall -g -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -MMD
 override CFLAGS+=-D_GNU_SOURCE -DCONFIG_VERSION=\"$(shell cat VERSION)\"
