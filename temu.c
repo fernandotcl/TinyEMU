@@ -42,6 +42,9 @@
 #endif
 #include <sys/stat.h>
 #include <signal.h>
+#ifdef __APPLE__
+#include <TargetConditionals.h>
+#endif
 
 #include "cutils.h"
 #include "iomem.h"
@@ -646,7 +649,11 @@ static BOOL net_poll_cb(void *arg)
 
 #endif
 
+#if defined(__APPLE__) && TARGET_OS_IPHONE
+int temu_main(int argc, char **argv)
+#else
 int main(int argc, char **argv)
+#endif
 {
     VirtMachine *s;
     const char *path, *cmdline, *build_preload_file;

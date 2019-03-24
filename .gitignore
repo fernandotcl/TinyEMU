@@ -1,5 +1,6 @@
 # Build products
 temu
+libtemu.a
 build_filelist
 splitimg
 *.o

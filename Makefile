@@ -77,14 +77,20 @@ LDFLAGS=
 bindir=/usr/local/bin
 INSTALL=install
 
-PROGS+= temu$(EXE)
+ifdef CONFIG_IOS
+PROGS=
+LIBS=libtemu.a
+else
+PROGS=temu$(EXE)
+LIBS=
+endif
 ifndef CONFIG_WIN32
 ifdef CONFIG_FS_NET
 PROGS+=build_filelist splitimg
 endif
 endif
 
-all: $(PROGS)
+all: $(PROGS) $(LIBS)
 
 EMU_OBJS:=virtio.o pci.o fs.o cutils.o iomem.o simplefb.o \
     json.o machine.o temu.o elf.o
@@ -134,6 +140,10 @@ endif
 temu$(EXE): $(EMU_OBJS)
 	$(CC) $(LDFLAGS) -o $@ $^ $(EMU_LIBS)
 
+libtemu.a: $(EMU_OBJS)
+	ar ru $@ $^
+	ranlib $@
+
 riscv_cpu32.o: riscv_cpu.c
 	$(CC) $(CFLAGS) -DMAX_XLEN=32 -c -o $@ $<
 
@@ -157,7 +167,7 @@ install: $(PROGS)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:
-	rm -f *.o *.d *~ $(PROGS) slirp/*.o slirp/*.d slirp/*~
+	rm -f *.o *.d *~ $(PROGS) $(LIBS) slirp/*.o slirp/*.d slirp/*~
 
 -include $(wildcard *.d)
 -include $(wildcard slirp/*.d)
