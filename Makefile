@@ -34,6 +34,8 @@ CONFIG_INT128=y
 CONFIG_X86EMU=y
 # macOS build
 #CONFIG_MACOS=y
+# iOS build
+#CONFIG_IOS=y
 # win32 build (not usable yet)
 #CONFIG_WIN32=y
 # user space network redirector
@@ -46,7 +48,15 @@ else
 CROSS_PREFIX=
 EXE=
 endif
+ifdef CONFIG_IOS
+ARCHS=-arch arm64
+CC=$(shell xcrun --sdk iphoneos --find clang)
+CC+=-isysroot $(shell xcrun --sdk iphoneos --show-sdk-path)
+CC+=$(ARCHS)
+CC+=-mios-version-min=11.0
+else
 CC=$(CROSS_PREFIX)gcc
+endif
 STRIP=$(CROSS_PREFIX)strip
 override CFLAGS+=-O2 -Wall -g -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -MMD
 override CFLAGS+=-D_GNU_SOURCE -DCONFIG_VERSION=\"$(shell cat VERSION)\"
@@ -75,7 +85,9 @@ endif
 ifndef CONFIG_WIN32
 EMU_OBJS+=fs_disk.o
 ifndef CONFIG_MACOS
+ifndef CONFIG_IOS
 EMU_LIBS=-lrt
+endif # CONFIG_IOS
 endif # CONFIG_MACOS
 endif # CONFIG_WIN32
 ifdef CONFIG_FS_NET
