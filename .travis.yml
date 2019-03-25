@@ -1,51 +1,37 @@
 language: c
 
-services:
-  - docker
-
 matrix:
   include:
+
     - os: linux
-      env: BUILD=linux
+      addons:
+        apt:
+          packages:
+            - libcurl4-openssl-dev
+            - libssl-dev
+            - libsdl2-dev
+      script:
+        - make
+
     - os: linux
-      env: BUILD=linux-emscripten
+      services:
+        - docker
+      before_install:
+        - docker run -dit --name emscripten -v $(pwd):/src trzeci/emscripten:sdk-incoming-64bit bash
+      script:
+        - docker exec -it emscripten make -f Makefile.js
+
     - os: osx
-      env: BUILD=macos
+      addons:
+        homebrew:
+          packages:
+            - openssl
+            - sdl2
+      script:
+        - make CFLAGS=-I$(brew --prefix)/opt/openssl/include CONFIG_MACOS=y
+
     - os: osx
-      env: BUILD=macos-ios
-
-addons:
-  apt:
-    packages:
-      - libcurl4-openssl-dev
-      - libssl-dev
-      - libsdl2-dev
-  homebrew:
-    packages:
-      - openssl
-      - sdl2
-
-before_install:
-  - case "$BUILD" in
-      linux-emscripten)
-        docker run -dit --name emscripten -v $(pwd):/src trzeci/emscripten:sdk-incoming-64bit bash
-        ;;
-    esac
-
-script:
-  - case "$BUILD" in
-      linux)
-        make
-        ;;
-      linux-emscripten)
-        docker exec -it emscripten make -f Makefile.js
-        ;;
-      macos)
-        make CFLAGS=-I$(brew --prefix)/opt/openssl/include CONFIG_MACOS=y
-        ;;
-      macos-ios)
-        make CONFIG_IOS=y CONFIG_FS_NET= CONFIG_SDL= ;
-        make clean ;
-        make CONFIG_IOS_SIMULATOR=y CONFIG_FS_NET= CONFIG_SDL=
-        ;;
-    esac
+      script:
+        - make CONFIG_IOS=y CONFIG_FS_NET= CONFIG_SDL=
+        - make clean
+        - make CONFIG_IOS_SIMULATOR=y CONFIG_FS_NET= CONFIG_SDL=
