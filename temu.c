@@ -163,6 +163,9 @@ static void term_resize_handler(int sig)
         global_stdio_device->resize_pending = TRUE;
 }
 
+#if defined(__APPLE__) && TARGET_OS_IPHONE
+extern void console_get_size(void *opaque, int *pw, int *ph);
+#else
 static void console_get_size(STDIODevice *s, int *pw, int *ph)
 {
     struct winsize ws;
@@ -178,6 +181,7 @@ static void console_get_size(STDIODevice *s, int *pw, int *ph)
     *pw = width;
     *ph = height;
 }
+#endif
 
 CharacterDevice *console_init(BOOL allow_ctrlc)
 {
