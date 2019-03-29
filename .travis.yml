@@ -28,7 +28,7 @@ matrix:
             - openssl
             - sdl2
       script:
-        - make CFLAGS=-I$(brew --prefix)/opt/openssl/include CONFIG_MACOS=y
+        - make CFLAGS=-I$(brew --prefix)/opt/openssl/include LDFLAGS=-L$(brew --prefix)/opt/openssl/lib CONFIG_MACOS=y
 
     - os: osx
       script:
