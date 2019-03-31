@@ -38,6 +38,7 @@
 #include "virtio.h"
 #include "machine.h"
 #include "elf.h"
+#include "compress.h"
 
 /* RISCV machine */
 
@@ -756,10 +757,11 @@ static void copy_bios(RISCVMachine *s, const uint8_t *buf, int buf_len,
                       const uint8_t *initrd_buf, int initrd_buf_len)
 {
     uint64_t fdt_addr, kernel_align, kernel_base, kernel_size;
-    uint64_t bios_base, bios_size, initrd_base;
+    uint64_t bios_base, bios_size, initrd_base, initrd_size;
     uint64_t image_start, image_len;
     uint8_t *ram_ptr;
     uint32_t *q;
+    int res;
 
     ram_ptr = get_ram_ptr(s, RAM_BASE_ADDR, TRUE);
 
@@ -820,9 +822,26 @@ static void copy_bios(RISCVMachine *s, const uint8_t *buf, int buf_len,
             vm_error("initrd too big\n");
             exit(1);
         }
-        memcpy(ram_ptr + initrd_base, initrd_buf, initrd_buf_len);
+#ifdef CONFIG_COMPRESSED_INITRAMFS
+        if (compress_detect_magic(initrd_buf, initrd_buf_len)) {
+            res = decompress(initrd_buf, initrd_buf_len,
+                             ram_ptr + initrd_base,
+                             s->ram_size - kernel_base);
+            if (res == -1) {
+                vm_error("Failed to decompress initramfs image\n");
+                exit(1);
+            }
+            initrd_size = (uint64_t)res;
+        } else {
+#else
+        {
+#endif
+            memcpy(ram_ptr + initrd_base, initrd_buf, initrd_buf_len);
+            initrd_size = initrd_buf_len;
+        }
     } else {
         initrd_base = 0;
+        initrd_size = 0;
     }
 
     ram_ptr = get_ram_ptr(s, 0, TRUE);
@@ -833,7 +852,7 @@ static void copy_bios(RISCVMachine *s, const uint8_t *buf, int buf_len,
                     RAM_BASE_ADDR + kernel_base,
                     kernel_size, cmd_line,
                     RAM_BASE_ADDR + initrd_base,
-                    initrd_buf_len);
+                    initrd_size);
 
     /* jump_addr = 0x80000000 */
     

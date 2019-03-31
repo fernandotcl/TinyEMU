@@ -42,6 +42,9 @@ CONFIG_X86EMU=y
 #CONFIG_WIN32=y
 # user space network redirector
 CONFIG_SLIRP=y
+# if set, you can pass a compressed cpio archive as initramfs. zlib
+# must be installed.
+CONFIG_COMPRESSED_INITRAMFS=y
 
 ifdef CONFIG_IOS_SIMULATOR
 CONFIG_IOS=y
@@ -140,6 +143,12 @@ endif
 ifdef CONFIG_X86EMU
 override CFLAGS+=-DCONFIG_X86EMU
 EMU_OBJS+=x86_cpu.o x86_machine.o ide.o ps2.o vmmouse.o pckbd.o vga.o
+endif
+
+ifdef CONFIG_COMPRESSED_INITRAMFS
+EMU_OBJS+=compress.o
+override CFLAGS+=-DCONFIG_COMPRESSED_INITRAMFS
+override LDFLAGS+=-lz
 endif
 
 temu$(EXE): $(EMU_OBJS)
