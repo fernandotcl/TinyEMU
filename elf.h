@@ -25,7 +25,8 @@
 int elf_detect_magic(const uint8_t *buf, int buf_len);
 
 int elf_load(const uint8_t *buf, int buf_len,
-             uint8_t *outbuf, int outbuf_len);
+             uint8_t *outbuf, int outbuf_len,
+             uint64_t *start, uint64_t *len);
 
 int elf_find_section(const uint8_t *buf, const char *name,
                      uint64_t *start, uint64_t *len);

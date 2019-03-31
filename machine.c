@@ -281,6 +281,13 @@ static int virt_machine_parse_config(VirtMachineParams *p,
     if (str) {
         p->cmdline = cmdline_subst(str);
     }
+
+    tag_name = "initrd";
+    if (vm_get_str_opt(cfg, tag_name, &str) < 0)
+        goto tag_fail;
+    if (str) {
+        p->files[VM_FILE_INITRD].filename = strdup(str);
+    }
     
     for(;;) {
         snprintf(buf1, sizeof(buf1), "drive%d", p->drive_count);

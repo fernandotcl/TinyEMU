@@ -586,7 +586,8 @@ void fdt_end(FDTState *s)
 
 static int riscv_build_fdt(RISCVMachine *m, uint8_t *dst,
                            uint64_t kernel_start, uint64_t kernel_size,
-                           const char *cmd_line)
+                           const char *cmd_line,
+                           uint64_t initrd_start, uint64_t initrd_size)
 {
     FDTState *s;
     int size, max_xlen, i, cur_phandle, intc_phandle, plic_phandle;
@@ -727,6 +728,10 @@ static int riscv_build_fdt(RISCVMachine *m, uint8_t *dst,
         fdt_prop_tab_u64(s, "riscv,kernel-start", kernel_start);
         fdt_prop_tab_u64(s, "riscv,kernel-end", kernel_start + kernel_size);
     }
+    if (initrd_size > 0) {
+        fdt_prop_tab_u64(s, "linux,initrd-start", initrd_start);
+        fdt_prop_tab_u64(s, "linux,initrd-end", initrd_start + initrd_size);
+    }
     
     fdt_end_node(s); /* chosen */
     
@@ -747,9 +752,12 @@ static int riscv_build_fdt(RISCVMachine *m, uint8_t *dst,
 
 static void copy_bios(RISCVMachine *s, const uint8_t *buf, int buf_len,
                       const uint8_t *kernel_buf, int kernel_buf_len,
-                      const char *cmd_line)
+                      const char *cmd_line,
+                      const uint8_t *initrd_buf, int initrd_buf_len)
 {
-    uint32_t fdt_addr, kernel_align, kernel_base;
+    uint64_t fdt_addr, kernel_align, kernel_base, kernel_size;
+    uint64_t bios_base, bios_size, initrd_base;
+    uint64_t image_start, image_len;
     uint8_t *ram_ptr;
     uint32_t *q;
 
@@ -757,20 +765,24 @@ static void copy_bios(RISCVMachine *s, const uint8_t *buf, int buf_len,
 
     /* copy the bios */
     if (elf_detect_magic(buf, buf_len)) {
-        if (elf_load(buf, buf_len, ram_ptr, s->ram_size) == -1) {
+        if (elf_load(buf, buf_len, ram_ptr, s->ram_size,
+                     &image_start, &image_len) == -1) {
             vm_error("Failed to load ELF BIOS\n");
             exit(1);
         }
+        bios_base = image_start - RAM_BASE_ADDR;
+        bios_size = image_len;
     } else {
         if (buf_len > s->ram_size) {
             vm_error("BIOS too big\n");
             exit(1);
         }
         memcpy(ram_ptr, buf, buf_len);
+        bios_size = buf_len;
     }
 
+    /* copy the kernel if present */
     if (kernel_buf_len > 0) {
-        /* copy the kernel if present */
         if (s->max_xlen == 32)
             kernel_align = 4 << 20; /* 4 MB page align */
         else
@@ -779,15 +791,38 @@ static void copy_bios(RISCVMachine *s, const uint8_t *buf, int buf_len,
         if (elf_detect_magic(kernel_buf, kernel_buf_len)) {
             if (elf_load(kernel_buf, kernel_buf_len,
                          ram_ptr + kernel_base,
-                         s->ram_size - kernel_base) == -1) {
+                         s->ram_size - kernel_base,
+                         &image_start, &image_len) == -1) {
                 vm_error("Failed to load ELF kernel\n");
                 exit(1);
             }
+            kernel_base += image_start;
+            kernel_size = image_len;
         } else {
             memcpy(ram_ptr + kernel_base, kernel_buf, kernel_buf_len);
+            kernel_size = kernel_buf_len;
         }
     } else {
         kernel_base = 0;
+        kernel_size = 0;
+    }
+
+    /* copy the initrd if present */
+    if (initrd_buf_len > 0) {
+        if (kernel_size > 0) {
+            initrd_base = kernel_base + kernel_size;
+        } else {
+            initrd_base = bios_base + bios_size;
+        }
+        initrd_base &= ~(DEVRAM_PAGE_SIZE - 1);
+        initrd_base += DEVRAM_PAGE_SIZE;
+        if (initrd_base + initrd_buf_len > s->ram_size) {
+            vm_error("initrd too big\n");
+            exit(1);
+        }
+        memcpy(ram_ptr + initrd_base, initrd_buf, initrd_buf_len);
+    } else {
+        initrd_base = 0;
     }
 
     ram_ptr = get_ram_ptr(s, 0, TRUE);
@@ -796,7 +831,9 @@ static void copy_bios(RISCVMachine *s, const uint8_t *buf, int buf_len,
 
     riscv_build_fdt(s, ram_ptr + fdt_addr,
                     RAM_BASE_ADDR + kernel_base,
-                    kernel_buf_len, cmd_line);
+                    kernel_size, cmd_line,
+                    RAM_BASE_ADDR + initrd_base,
+                    initrd_buf_len);
 
     /* jump_addr = 0x80000000 */
     
@@ -977,7 +1014,8 @@ static VirtMachine *riscv_machine_init(const VirtMachineParams *p)
 
     copy_bios(s, p->files[VM_FILE_BIOS].buf, p->files[VM_FILE_BIOS].len,
               p->files[VM_FILE_KERNEL].buf, p->files[VM_FILE_KERNEL].len,
-              p->cmdline);
+              p->cmdline,
+              p->files[VM_FILE_INITRD].buf, p->files[VM_FILE_INITRD].len);
     
     return (VirtMachine *)s;
 }

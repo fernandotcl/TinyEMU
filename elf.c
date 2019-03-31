@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <inttypes.h>
+#include <sys/param.h>
 
 #include "cutils.h"
 
@@ -178,7 +179,8 @@ int elf_detect_magic(const uint8_t *buf, int buf_len)
         (uint64_t)elf_to_cpu32(((elf_sheader32_t *)(buf + shbase))->x))
 
 int elf_load(const uint8_t *buf, int buf_len,
-             uint8_t *outbuf, int outbuf_len)
+             uint8_t *outbuf, int outbuf_len,
+             uint64_t *start, uint64_t *len)
 {
     elf_ident_t *ident = (elf_ident_t *)buf;
 
@@ -197,6 +199,7 @@ int elf_load(const uint8_t *buf, int buf_len,
         }
     }
 
+    size_t image_size = 0;
     for (i = 0; i < phnum; i++) {
         const uintptr_t phbase = phoff + i * phentsize;
         const uint32_t type = pheader_field(32, type);
@@ -204,9 +207,18 @@ int elf_load(const uint8_t *buf, int buf_len,
             const uintptr_t offset = (uintptr_t)pheader_dword(offset);
             const uintptr_t paddr = (uintptr_t)pheader_dword(paddr);
             const size_t filesz = (size_t)pheader_dword(filesz);
-            if (paddr - base_address + filesz > outbuf_len) return -1;
+            const size_t memsz = (size_t)pheader_dword(memsz);
+            if (paddr - base_address + MAX(memsz, filesz) > outbuf_len) return -1;
             memcpy(&outbuf[paddr - base_address], &buf[offset], filesz);
+            image_size = MAX(image_size, paddr - base_address + memsz);
         }
+    }
+
+    if (start != NULL) {
+        *start = (uint64_t)base_address;
+    }
+    if (len != NULL) {
+        *len = (uint64_t)image_size;
     }
 
     return 0;
