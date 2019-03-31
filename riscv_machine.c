@@ -780,6 +780,7 @@ static void copy_bios(RISCVMachine *s, const uint8_t *buf, int buf_len,
             exit(1);
         }
         memcpy(ram_ptr, buf, buf_len);
+        bios_base = RAM_BASE_ADDR;
         bios_size = buf_len;
     }
 
