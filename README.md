@@ -2,17 +2,26 @@
 
 [![Build Status](https://travis-ci.com/fernandotcl/TinyEMU.svg?branch=master)](https://travis-ci.com/fernandotcl/TinyEMU)
 
-This is a port of [TinyEMU][tinyemu] to macOS.
+This is a modified version of [Fabrice Bellard's TinyEMU][TinyEMU].
 
-[tinyemu]: https://bellard.org/tinyemu/
+[TinyEMU]: https://bellard.org/tinyemu/
 
 ## Features
 
-- 32/64/128 bit RISC-V emulation.
+- 32/64/128-bit RISC-V emulation.
 - VirtIO console, network, block device, input and 9P filesystem.
 - Framebuffer emulation through SDL.
 - Remote HTTP block device and filesystem.
 - Small code, easy to modify, no external dependencies.
+
+Changes from Fabrice Bellard's 2019-02-10 release:
+
+- macOS and [iOS][TinyEMU-iOS] support.
+- Support for loading ELF images.
+- Support for loading initrd images or compressed initramfs archives.
+- Framebuffer support through SDL 2 instead of 1.2.
+
+[TinyEMU-iOS]: https://github.com/fernandotcl/TinyEMU-iOS
 
 ## Usage
 
@@ -66,6 +75,6 @@ TinyEMU was created by [Fabrice Bellard][fabrice]. This port is maintained by [F
 
 ## License
 
-TinyEMU is released under the MIT license unless otherwise specified in specific files.
+Unless otherwise specified in individual files, TinyEMU is available under the MIT license.
 
 The SLIRP library has its own license (two-clause BSD license).
