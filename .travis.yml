@@ -9,6 +9,7 @@ matrix:
           packages:
             - libcurl4-openssl-dev
             - libssl-dev
+            - zlib1g-dev
             - libsdl2-dev
       script:
         - make
