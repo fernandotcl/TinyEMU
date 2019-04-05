@@ -105,8 +105,11 @@ EMU_OBJS:=virtio.o pci.o fs.o cutils.o iomem.o simplefb.o \
 
 ifdef CONFIG_SLIRP
 override CFLAGS+=-DCONFIG_SLIRP
+ifdef CONFIG_MACOS
+override LDFLAGS+=-lresolv
+endif # CONFIG_MACOS
 EMU_OBJS+=$(addprefix slirp/, bootp.o ip_icmp.o mbuf.o slirp.o tcp_output.o cksum.o ip_input.o misc.o socket.o tcp_subr.o udp.o if.o ip_output.o sbuf.o tcp_input.o tcp_timer.o)
-endif
+endif # CONFIG_SLIRP
 
 ifndef CONFIG_WIN32
 EMU_OBJS+=fs_disk.o

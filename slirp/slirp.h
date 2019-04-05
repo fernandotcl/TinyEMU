@@ -76,6 +76,7 @@ typedef char *caddr_t;
 #ifndef _WIN32
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <resolv.h>
 #endif
 
 /* Systems lacking strdup() definition in <string.h>. */

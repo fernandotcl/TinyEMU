@@ -95,6 +95,62 @@ static void winsock_cleanup(void)
     WSACleanup();
 }
 
+#elif defined(__APPLE__)
+
+int get_dns_addr(struct in_addr *pdns_addr)
+{
+    struct __res_state res;
+    union res_sockaddr_union servers[NI_MAXSERV];
+    int num_servers, i;
+    int found = 0;
+    struct in_addr tmp_addr;
+
+    if (dns_addr.s_addr != 0) {
+        if ((curtime - dns_addr_time) < 1000) {
+            *pdns_addr = dns_addr;
+            return 0;
+        }
+    }
+
+#ifdef DEBUG
+    lprint("IP address of your DNS(s): ");
+#endif
+    if (res_ninit(&res) == -1)
+        return -1;
+    num_servers = res_getservers(&res, &servers[0], NI_MAXSERV);
+    for (i = 0; i < num_servers; i++) {
+        if (servers[i].sin.sin_family != AF_INET) continue;
+        tmp_addr = servers[i].sin.sin_addr;
+        /* If it's the first one, set it to dns_addr */
+        if (!found) {
+            *pdns_addr = tmp_addr;
+            dns_addr = tmp_addr;
+            dns_addr_time = curtime;
+        }
+#ifdef DEBUG
+        else
+            lprint(", ");
+#endif
+        if (++found > 3) {
+#ifdef DEBUG
+            lprint("(more)");
+#endif
+            break;
+        }
+#ifdef DEBUG
+        else
+            lprint("%s", inet_ntoa(tmp_addr));
+#endif
+    }
+#ifdef DEBUG
+    lprint("\n");
+#endif
+    res_nclose(&res);
+    if (!found)
+        return -1;
+    return 0;
+}
+
 #else
 
 static struct stat dns_addr_stat;
@@ -159,6 +215,9 @@ int get_dns_addr(struct in_addr *pdns_addr)
         }
     }
     fclose(f);
+#ifdef DEBUG
+    lprint("\n");
+#endif
     if (!found)
         return -1;
     return 0;
