@@ -23,6 +23,7 @@ matrix:
         - docker exec -it emscripten make -f Makefile.js
 
     - os: osx
+      osx_image: xcode10.3
       addons:
         homebrew:
           packages:
@@ -32,6 +33,7 @@ matrix:
         - make CFLAGS=-I$(brew --prefix)/opt/openssl/include LDFLAGS=-L$(brew --prefix)/opt/openssl/lib CONFIG_MACOS=y
 
     - os: osx
+      osx_image: xcode10.3
       script:
         - make CONFIG_IOS=y CONFIG_FS_NET= CONFIG_SDL=
         - make clean
