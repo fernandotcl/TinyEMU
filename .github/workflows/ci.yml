@@ -1,0 +1,38 @@
+name: Build
+
+on: [push, pull_request]
+
+jobs:
+
+  build_linux:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - run: sudo apt-get install libcurl4-openssl-dev libssl-dev zlib1g-dev libsdl2-dev
+      - run: make
+
+  build_js:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - run: docker run -dit --name emscripten -v $(pwd):/src trzeci/emscripten:sdk-incoming-64bit bash
+      - run: docker exec emscripten make -f Makefile.js
+
+  build_mac:
+      runs-on: macos-10.15
+      env:
+        DEVELOPER_DIR: /Applications/Xcode_11.5.app/Contents/Developer
+      steps:
+        - uses: actions/checkout@v2
+        - run: brew install openssl sdl2
+        - run: make CFLAGS=-I$(brew --prefix)/opt/openssl/include LDFLAGS=-L$(brew --prefix)/opt/openssl/lib CONFIG_MACOS=y
+
+  build_ios:
+      runs-on: macos-10.15
+      env:
+        DEVELOPER_DIR: /Applications/Xcode_11.5.app/Contents/Developer
+      steps:
+        - uses: actions/checkout@v2
+        - run: make CONFIG_IOS=y CONFIG_FS_NET= CONFIG_SDL=
+        - run: make clean
+        - run: make CONFIG_IOS_SIMULATOR=y CONFIG_FS_NET= CONFIG_SDL=
