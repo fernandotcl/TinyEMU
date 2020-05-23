@@ -1,6 +1,6 @@
 # TinyEMU
 
-[![Build Status](https://travis-ci.com/fernandotcl/TinyEMU.svg?branch=master)](https://travis-ci.com/fernandotcl/TinyEMU)
+![Build](https://github.com/fernandotcl/TinyEMU/workflows/Build/badge.svg)
 
 This is a modified version of [Fabrice Bellard's TinyEMU][TinyEMU].
 
