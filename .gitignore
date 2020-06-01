@@ -5,6 +5,7 @@ build_filelist
 splitimg
 *.o
 *.d
+lib/riscvemu*
 
 # macOS-specific
 .DS_Store
